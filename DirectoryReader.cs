@@ -22,7 +22,6 @@ namespace DirectoryReader
     {
         static void Main(string[] args)
         {
-            /* Accessing C: comes with an unauthorised exception, except this */
             string fileSystem = "C://Users//J-Cha//Documents//DnD//Guides";
 
             DirectorySearcher searcher = new DirectorySearcher();
@@ -31,15 +30,11 @@ namespace DirectoryReader
             DirectoryStats directories = searcher.GetFullDirectory(directoryPath: fileSystem);
 
             Console.WriteLine("Sorting");
-            directories.SortSubdirectories(directories);
-
-            foreach (DirectoryStats sub in directories.subdirectories)
-            {
-                Console.WriteLine(sub.name);
-                Console.WriteLine(sub.size);
-            }
-
-            Console.WriteLine("Writing to {0}");
+            TextWriter writer = new TextWriter();
+            string path = @"C:/Users/J-Cha/Documents/DnD/thing.txt";
+            Console.WriteLine("Writing to {0}", path);
+            writer.WriteDirectoryStats(path, directories);
+            Console.WriteLine("Complete");
 
             Console.ReadLine();
         }
@@ -115,7 +110,7 @@ namespace DirectoryReader
                 subdirectories = Directory.GetDirectories(path);
             }
 
-            catch (System.UnauthorizedAccessException)
+            catch (UnauthorizedAccessException)
             {
                 directory.access = false;
                 return directory;
@@ -162,7 +157,7 @@ namespace DirectoryReader
                 {
                     file = new FileInfo(filePath);
                 }
-                catch (System.IO.PathTooLongException)
+                catch (PathTooLongException)
                 {
                     continue;
                 }
@@ -181,9 +176,50 @@ namespace DirectoryReader
         }
     }
 
-    //Outputs a dictionary list to a custom formatted .txt file
+    //Outputs a DirectoryStats to a custom formatted .txt file
     class TextWriter
     {
+        private int indentStep = 2; //How far subdirectories and files should be indented in the .txt file
+        private List<string> directoryStrings = new List<string>();
 
+        public void WriteDirectoryStats(string filePath, DirectoryStats directory)
+        {
+            getDirectoryStringList(directory);
+            File.WriteAllLines(@filePath, directoryStrings.ToArray());
+        }
+
+        //Need to end up with a list of strings so just loop through and add indents before the string is added
+        //Indent depends how far through the directories it is so therefore this is recursive.
+
+        private void getDirectoryStringList(DirectoryStats dir, int initialIndent = 0)
+        {
+            directoryStrings.Add(buildDirectoryString(dir.name, initialIndent, dir.size));
+
+            if (dir.subdirectories.Count != 0)
+            {
+                foreach (DirectoryStats subdirectory in dir.subdirectories)
+                {
+                    getDirectoryStringList(subdirectory, initialIndent + indentStep);
+                }
+            }
+
+            if (dir.files.Count != 0)
+            {
+                foreach (FileStats file in dir.files)
+                {
+                    directoryStrings.Add(buildDirectoryString(file.name, initialIndent + indentStep, file.size));
+                }
+            }
+        }
+
+        private string getIndent(int indent)
+        {
+            return new String(' ', indent);
+        }
+
+        private string buildDirectoryString(string name, int initialIndent, long size)
+        {
+            return getIndent(initialIndent) + name + "    " + size + "b";
+        }
     }
 }
