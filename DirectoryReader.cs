@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace DirectoryReader
 {
@@ -22,21 +23,88 @@ namespace DirectoryReader
     {
         static void Main(string[] args)
         {
-            string fileSystem = "C:/";
-
             DirectorySearcher searcher = new DirectorySearcher();
+            //Introduce and get input for file system
+            //Also get input for output path
+            string fileSystem = "";
+            bool directoryExists = false;
+            string outputPath = "";
+
+            while (!directoryExists)
+            {
+                Console.WriteLine("Type a Directory to search through (default is C:/)");
+                fileSystem = @Console.ReadLine();
+
+                if (fileSystem == "")
+                {
+                    fileSystem = "C:/";
+                }
+                DirectoryInfo dirInfo = new DirectoryInfo(fileSystem);
+                if (dirInfo.Exists)
+                {
+                    directoryExists = true;
+                }
+                else
+                {
+                    Console.WriteLine("Directory Not Found please try again");
+                }
+            }
+
+            Console.WriteLine("Enter Output Path for .txt file");
+            Console.WriteLine("Adding only filename will add .txt file to {0}", fileSystem);
+            outputPath = Console.ReadLine();
+
+            if (!outputPath.Contains("/") || !outputPath.Contains("\\") || !outputPath.Contains("//") || !outputPath.Contains(@"\"))
+            {
+                string fileName = outputPath;
+                if (fileSystem != "C:/") //C:/ Will prevent writing so adding this check
+                {
+                    outputPath = fileSystem + @"/" + fileName;
+                }
+                else
+                {
+                    outputPath = fileSystem + @"/Users/Public/Documents/" + fileName;
+                }
+            }
+
+            if (outputPath == "")
+            {
+                if (fileSystem != "C:/") //C:/ Will prevent writing so adding this check
+                {
+                    outputPath = fileSystem + "text.txt";
+                }
+                else
+                {
+                    outputPath = fileSystem + @"/Users/" + "text.txt";
+                }
+            }
+
+            outputPath = checkFileExtension(outputPath);
 
             Console.WriteLine("Reading Directories...");
             DirectoryStats directories = searcher.GetFullDirectory(directoryPath: fileSystem);
 
             Console.WriteLine("Sorting");
+            directories.SortSubdirectories(directories);
             TextWriter writer = new TextWriter();
-            string path = @"C:/t.txt";
-            Console.WriteLine("Writing to {0}", path);
-            writer.WriteDirectoryStats(path, directories);
+
+            Console.WriteLine("Writing to {0}", outputPath);
+            writer.WriteDirectoryStats(outputPath, directories);
             Console.WriteLine("Complete");
 
             Console.ReadLine();
+        }
+
+        private static string checkFileExtension(string outputPath)
+        {
+            if (outputPath.Substring(outputPath.Length - 4) != ".txt")
+            {
+                return @outputPath + ".txt";
+            }
+            else
+            {
+                return @outputPath;
+            }
         }
     }
 
@@ -61,19 +129,19 @@ namespace DirectoryReader
             //Recursively sets subdirectories to sort themselves
             foreach (DirectoryStats subdirectory in dir.subdirectories)
             {
-                if (subdirectory.subdirectories.Count != 0)
-                {
-                    SortSubdirectories(subdirectory);
-                }
+                SortSubdirectories(subdirectory);
+            }
 
-                //Once all subdirectories have been sorted the directory sorts itself
-                dir.subdirectories.Sort((x, y) => y.size.CompareTo(x.size));
+            //Once all subdirectories have been sorted the directory sorts itself
+            if (dir.subdirectories.Count != 0)
+            {
+                dir.subdirectories = dir.subdirectories.OrderByDescending(x => x.size).ToList();
             }
 
             //Sorts the directories files (if there are any)
             if (dir.files.Count != 0)
             {
-                dir.files.Sort((x, y) => y.size.CompareTo(x.size));
+                dir.files = dir.files.OrderByDescending(x => x.size).ToList();
             }
         }
     }
@@ -185,7 +253,14 @@ namespace DirectoryReader
         public void WriteDirectoryStats(string filePath, DirectoryStats directory)
         {
             getDirectoryStringList(directory);
-            File.WriteAllLines(@filePath, directoryStrings.ToArray());
+            try
+            {
+                File.WriteAllLines(@filePath, directoryStrings.ToArray());
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Console.WriteLine("Unauthorized Access to {0}", filePath);
+            }
         }
 
 
