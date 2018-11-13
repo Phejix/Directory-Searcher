@@ -22,7 +22,7 @@ namespace DirectoryReader
     {
         static void Main(string[] args)
         {
-            string fileSystem = "C://Users//J-Cha//Documents//DnD//Guides";
+            string fileSystem = "C:/";
 
             DirectorySearcher searcher = new DirectorySearcher();
 
@@ -31,7 +31,7 @@ namespace DirectoryReader
 
             Console.WriteLine("Sorting");
             TextWriter writer = new TextWriter();
-            string path = @"C:/Users/J-Cha/Documents/DnD/thing.txt";
+            string path = @"C:/t.txt";
             Console.WriteLine("Writing to {0}", path);
             writer.WriteDirectoryStats(path, directories);
             Console.WriteLine("Complete");
@@ -188,9 +188,8 @@ namespace DirectoryReader
             File.WriteAllLines(@filePath, directoryStrings.ToArray());
         }
 
-        //Need to end up with a list of strings so just loop through and add indents before the string is added
-        //Indent depends how far through the directories it is so therefore this is recursive.
 
+        //Recursively adds strings to directoryStrings with the correct indent
         private void getDirectoryStringList(DirectoryStats dir, int initialIndent = 0)
         {
             directoryStrings.Add(buildDirectoryString(dir.name, initialIndent, dir.size));
